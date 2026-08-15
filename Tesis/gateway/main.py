@@ -35,7 +35,13 @@ def json_response_from_service(res):
 
 
 def get_auth_header(request: Request):
-    return {"Authorization": request.headers.get("Authorization", "")}
+    """Return an Authorization header only when present in the incoming request.
+
+    Avoid sending an empty Authorization header to upstream services, which can
+    cause unexpected rejections in some setups.
+    """
+    auth = request.headers.get("Authorization")
+    return {"Authorization": auth} if auth else {}
 
 
 async def get_json_or_empty(request: Request):
@@ -92,7 +98,7 @@ def home():
 @app.post("/login")
 async def login(request: Request):
     data = await get_json_or_empty(request)
-    return proxy_request("POST", f"{AUTH_URL}/login", json=data)
+    return proxy_request("POST", f"{AUTH_URL}/login", request=request, json=data)
 
 
 @app.post("/register")
