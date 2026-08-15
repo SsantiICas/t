@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import requests
+import json
 
 app = FastAPI(title="SmartLogistic API Gateway")
 
@@ -37,6 +38,36 @@ def get_auth_header(request: Request):
     return {"Authorization": request.headers.get("Authorization", "")}
 
 
+async def get_json_or_empty(request: Request):
+    """Safely parse JSON from the request.
+
+    Returns an empty dict when the body is empty or not valid JSON.
+    Tries these in order:
+      - await request.json()
+      - if body empty -> {}
+      - try to decode body bytes as JSON
+      - try to read form data and return as dict
+      - fallback to {}
+    """
+    try:
+        return await request.json()
+    except Exception:
+        # If body is empty, return empty dict
+        body = await request.body()
+        if not body:
+            return {}
+        # Try to decode bytes as JSON
+        try:
+            return json.loads(body.decode("utf-8"))
+        except Exception:
+            # Try form data
+            try:
+                form = await request.form()
+                return dict(form)
+            except Exception:
+                return {}
+
+
 def proxy_request(method: str, url: str, request: Request = None, **kwargs):
     headers = kwargs.pop("headers", {}) or {}
     if request is not None:
@@ -60,13 +91,13 @@ def home():
 
 @app.post("/login")
 async def login(request: Request):
-    data = await request.json()
+    data = await get_json_or_empty(request)
     return proxy_request("POST", f"{AUTH_URL}/login", json=data)
 
 
 @app.post("/register")
 async def register(request: Request):
-    data = await request.json()
+    data = await get_json_or_empty(request)
     return proxy_request("POST", f"{AUTH_URL}/register", request=request, json=data)
 
 
@@ -77,7 +108,7 @@ def get_usuarios(request: Request):
 
 @app.put("/usuarios/{usuario_id}")
 async def update_usuario(usuario_id: int, request: Request):
-    data = await request.json()
+    data = await get_json_or_empty(request)
     return proxy_request("PUT", f"{AUTH_URL}/usuarios/{usuario_id}", request=request, json=data)
 
 
@@ -88,7 +119,7 @@ def get_clientes(request: Request):
 
 @app.post("/clientes")
 async def create_cliente(request: Request):
-    data = await request.json()
+    data = await get_json_or_empty(request)
     return proxy_request("POST", f"{CLIENTES_URL}/clientes", request=request, json=data)
 
 
@@ -99,13 +130,13 @@ def get_cliente(cliente_id: int, request: Request):
 
 @app.put("/clientes/{cliente_id}")
 async def update_cliente(cliente_id: int, request: Request):
-    data = await request.json()
+    data = await get_json_or_empty(request)
     return proxy_request("PUT", f"{CLIENTES_URL}/clientes/{cliente_id}", request=request, json=data)
 
 
 @app.patch("/clientes/{cliente_id}/estado")
 async def update_cliente_estado(cliente_id: int, request: Request):
-    data = await request.json()
+    data = await get_json_or_empty(request)
     return proxy_request("PATCH", f"{CLIENTES_URL}/clientes/{cliente_id}/estado", request=request, json=data)
 
 
@@ -136,13 +167,13 @@ def get_productos(request: Request):
 
 @app.post("/productos")
 async def create_producto(request: Request):
-    data = await request.json()
+    data = await get_json_or_empty(request)
     return proxy_request("POST", f"{ALMACEN_URL}/productos", request=request, json=data)
 
 
 @app.put("/productos/{producto_id}/stock")
 async def update_producto_stock(producto_id: int, request: Request):
-    data = await request.json()
+    data = await get_json_or_empty(request)
     stock = data.get("stock")
     return proxy_request(
         "PUT",
@@ -153,13 +184,13 @@ async def update_producto_stock(producto_id: int, request: Request):
 
 @app.put("/productos/{producto_id}")
 async def update_producto(producto_id: int, request: Request):
-    data = await request.json()
+    data = await get_json_or_empty(request)
     return proxy_request("PUT", f"{ALMACEN_URL}/productos/{producto_id}", request=request, json=data)
 
 
 @app.patch("/productos/{producto_id}/estado")
 async def update_producto_estado(producto_id: int, request: Request):
-    data = await request.json()
+    data = await get_json_or_empty(request)
     return proxy_request("PATCH", f"{ALMACEN_URL}/productos/{producto_id}/estado", request=request, json=data)
 
 
@@ -190,19 +221,19 @@ def get_pedidos(request: Request):
 
 @app.post("/pedidos")
 async def create_pedido(request: Request):
-    data = await request.json()
+    data = await get_json_or_empty(request)
     return proxy_request("POST", f"{PEDIDOS_URL}/pedidos", request=request, json=data)
 
 
 @app.post("/pedidos/orden")
 async def create_orden(request: Request):
-    data = await request.json()
+    data = await get_json_or_empty(request)
     return proxy_request("POST", f"{PEDIDOS_URL}/pedidos/orden", request=request, json=data)
 
 
 @app.put("/pedidos/{pedido_id}/estado")
 async def update_pedido_estado(pedido_id: int, request: Request):
-    data = await request.json()
+    data = await get_json_or_empty(request)
     estado = data.get("estado")
     return proxy_request(
         "PUT",
