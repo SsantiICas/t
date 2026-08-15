@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartLogistic Operaciones</title>
+  <!-- Tailwind CSS vía CDN: se usa en los componentes nuevos (switch ACTIVO/INACTIVO, paneles de
+       edición de clientes/productos, buscadores, Panel de Administración), con bordes poco
+       redondeados (rounded-md/rounded-sm) para una estética más firme. El resto del diseño
+       existente sigue controlado por styles.css, sin alterarse. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="login" class="login-page">
+  <div class="login-card">
+    <div class="brand-badge">SL</div>
+    <h1>SmartLogistic</h1>
+    <p class="login-subtitle">Sistema de gestión operativa de clientes</p>
+
+    <label>Usuario</label>
+    <input type="text" id="email" placeholder="Ej: admin" autocomplete="username">
+
+    <label>Contraseña</label>
+    <div class="relative">
+      <input type="password" id="password" placeholder="Ingrese su contraseña" autocomplete="current-password" class="pr-14">
+      <button type="button" onclick="togglePasswordVisibility('password', this)"
+        class="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 hover:text-slate-700 rounded-md px-1.5 py-1">Ver</button>
+    </div>
+
+    <button type="button" class="primary-btn" onclick="login(event)">Ingresar al sistema</button>
+    <p id="loginError" class="error"></p>
+  </div>
+</div>
+
+<div id="app" class="app hidden">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-badge small">SL</div>
+      <div>
+        <h2>SmartLogistic</h2>
+        <span>Operaciones</span>
+      </div>
+    </div>
+
+    <nav>
+      <button type="button" class="nav-btn active" onclick="showSection('panel', this)">Panel principal</button>
+      <button type="button" class="nav-btn" onclick="showSection('clientes', this)">Gestión de clientes</button>
+      <button type="button" class="nav-btn" onclick="showSection('productos', this)">Control de almacén</button>
+      <button type="button" class="nav-btn" onclick="showSection('pedidos', this)">Registro de pedidos</button>
+      <button type="button" class="nav-btn" onclick="showSection('historial', this)">Historial de pedidos</button>
+      <button type="button" id="navAdminBtn" class="nav-btn hidden" onclick="window.location.href='admin.html'">Administración</button>
+    </nav>
+
+    <button type="button" class="theme-btn" onclick="toggleDarkMode()">Cambiar modo</button>
+    <button type="button" class="logout-btn" onclick="logout()">Cerrar sesión</button>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h1 id="sectionTitle">Panel principal</h1>
+        <p>Aplicación web basada en microservicios para Smart Logistic, C.A.</p>
+      </div>
+      <span class="status-pill">Sistema activo</span>
+    </header>
+
+    <section id="panel" class="section">
+      <div class="cards-grid">
+        <div class="metric-card">
+          <span>Clientes registrados</span>
+          <strong id="total_clientes">0</strong>
+        </div>
+        <div class="metric-card yellow">
+          <span>Productos en almacén</span>
+          <strong id="total_productos">0</strong>
+        </div>
+        <div class="metric-card">
+          <span>Pedidos procesados</span>
+          <strong id="total_pedidos">0</strong>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h2>Resumen operativo</h2>
+        <p>
+          Este sistema permite centralizar el registro de clientes, controlar el inventario,
+          procesar pedidos y hacer seguimiento del estado operativo, reduciendo tareas manuales
+          y mejorando la organización interna de Smart Logistic, C.A.
+        </p>
+      </div>
+    </section>
+
+    <section id="clientes" class="section hidden">
+      <div class="module-header">
+        <div>
+          <h2>Gestión de clientes</h2>
+          <p>Registra, consulta y elimina clientes asociados a las operaciones logísticas.</p>
+        </div>
+      </div>
+
+      <div class="form-card" data-requiere-gerente>
+        <input id="cliente_nombre" placeholder="Nombre o Razón Social">
+        <input id="cliente_cedula_rif" placeholder="Cédula o RIF">
+        <input id="cliente_telefono" placeholder="Teléfono">
+        <input id="cliente_email" placeholder="Correo electrónico">
+        <button type="button" class="primary-btn" onclick="crearCliente(event)">Registrar cliente</button>
+        <button type="button" class="secondary-btn" onclick="togglePanelEdicion('cliente')">Actualizar cliente</button>
+      </div>
+
+      <!-- Panel de edición: se selecciona el cliente y se actualiza mediante el botón "Actualizar". -->
+      <div id="panelEditarCliente" class="hidden border border-slate-300 rounded-md bg-white p-5 mb-5">
+        <h3 class="font-bold text-[color:var(--blue-dark)] mb-3">Actualizar cliente</h3>
+        <select id="editar_cliente_select" onchange="cargarClienteEnPanel()"
+          class="w-full border border-slate-300 rounded-md px-3 py-2.5 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-800/30 focus:border-blue-800">
+          <option value="">Seleccione un cliente para editar</option>
+        </select>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <input id="editar_cliente_nombre" placeholder="Nombre o Razón Social"
+            class="w-full border border-slate-300 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/30 focus:border-blue-800">
+          <input id="editar_cliente_cedula_rif" placeholder="Cédula o RIF"
+            class="w-full border border-slate-300 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/30 focus:border-blue-800">
+          <input id="editar_cliente_telefono" placeholder="Teléfono"
+            class="w-full border border-slate-300 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/30 focus:border-blue-800">
+          <input id="editar_cliente_email" placeholder="Correo electrónico"
+            class="w-full border border-slate-300 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/30 focus:border-blue-800">
+        </div>
+        <div class="flex gap-2 mt-4">
+          <button type="button" onclick="actualizarClienteDesdePanel(event)"
+            class="bg-[color:var(--blue-dark)] text-white font-bold rounded-md px-4 py-2.5 text-sm hover:opacity-90">Actualizar</button>
+          <button type="button" onclick="togglePanelEdicion('cliente')"
+            class="bg-slate-200 text-slate-700 font-bold rounded-md px-4 py-2.5 text-sm hover:bg-slate-300">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <h3>Clientes registrados</h3>
+        <input id="buscador_clientes" type="text" placeholder="Buscar cliente por nombre..." oninput="filtrarClientes()"
+          class="w-full border border-slate-300 rounded-md px-3 py-2.5 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-800/30 focus:border-blue-800">
+        <div id="lista_clientes" class="list-container"></div>
+      </div>
+    </section>
+
+    <section id="productos" class="section hidden">
+      <div class="module-header">
+        <div>
+          <h2>Control de almacén</h2>
+          <p>Registra productos, actualiza stock y elimina productos del inventario.</p>
+        </div>
+      </div>
+
+      <div class="form-card" data-requiere-gerente>
+        <input id="producto_nombre" placeholder="Nombre del producto">
+        <input id="producto_categoria" placeholder="Categoría (ej: Electrónica)">
+        <input id="producto_stock" type="number" min="1" placeholder="Stock disponible">
+        <button type="button" class="primary-btn" onclick="crearProducto(event)">Registrar producto</button>
+        <button type="button" class="secondary-btn" onclick="togglePanelEdicion('producto')">Actualizar producto</button>
+      </div>
+
+      <!-- Panel de edición: se selecciona el producto y se actualiza mediante el botón "Actualizar". -->
+      <div id="panelEditarProducto" class="hidden border border-slate-300 rounded-md bg-white p-5 mb-5">
+        <h3 class="font-bold text-[color:var(--blue-dark)] mb-3">Actualizar producto</h3>
+        <select id="editar_producto_select" onchange="cargarProductoEnPanel()"
+          class="w-full border border-slate-300 rounded-md px-3 py-2.5 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-800/30 focus:border-blue-800">
+          <option value="">Seleccione un producto para editar</option>
+        </select>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <input id="editar_producto_nombre" placeholder="Nombre del producto"
+            class="w-full border border-slate-300 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/30 focus:border-blue-800">
+          <input id="editar_producto_categoria" placeholder="Categoría"
+            class="w-full border border-slate-300 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/30 focus:border-blue-800">
+        </div>
+        <div class="flex gap-2 mt-4">
+          <button type="button" onclick="actualizarProductoDesdePanel(event)"
+            class="bg-[color:var(--blue-dark)] text-white font-bold rounded-md px-4 py-2.5 text-sm hover:opacity-90">Actualizar</button>
+          <button type="button" onclick="togglePanelEdicion('producto')"
+            class="bg-slate-200 text-slate-700 font-bold rounded-md px-4 py-2.5 text-sm hover:bg-slate-300">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <h3>Productos en almacén</h3>
+        <input id="buscador_productos" type="text" placeholder="Buscar por nombre o categoría..." oninput="filtrarProductos()"
+          class="w-full border border-slate-300 rounded-md px-3 py-2.5 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-800/30 focus:border-blue-800">
+        <div id="lista_productos" class="list-container"></div>
+      </div>
+    </section>
+
+    <section id="pedidos" class="section hidden">
+      <div class="module-header">
+        <div>
+          <h2>Registro de pedidos</h2>
+          <p>Selecciona un cliente y agrega uno o varios productos a su orden.</p>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <select id="pedido_cliente">
+          <option value="">Seleccione un cliente</option>
+        </select>
+      </div>
+
+      <div class="table-card">
+        <h3>Productos de la orden</h3>
+        <div id="lineas_orden" class="grid gap-2 mb-3"></div>
+        <div class="flex gap-2 flex-wrap">
+          <button type="button" class="secondary-btn" onclick="agregarLineaOrden()">+ Agregar producto</button>
+          <button type="button" class="primary-btn" style="width:auto; margin-top:0;" onclick="crearOrdenPedido(event)">Procesar orden</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="historial" class="section hidden">
+      <div class="module-header">
+        <div>
+          <h2>Historial de pedidos</h2>
+          <p>Consulta pedidos procesados, cambia su estado o elimina registros del historial.</p>
+        </div>
+        <button type="button" class="secondary-btn" onclick="cargarHistorialPedidos()">Actualizar historial</button>
+      </div>
+
+      <div class="table-card">
+        <div id="lista_historial" class="list-container"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="alert" class="alert hidden"></div>
+
+<script src="common.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

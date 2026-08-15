@@ -1,0 +1,46 @@
+SMARTLOGISTIC OPERACIONES - GUIA RAPIDA
+
+1. Doble clic en start.bat para iniciar todo el sistema.
+2. Espera unos segundos; se abriran varias terminales.
+3. El navegador se abrira automaticamente en:
+   http://127.0.0.1:5500
+
+Servicios:
+- Clientes: http://127.0.0.1:8000/docs
+- Pedidos: http://127.0.0.1:8001/docs
+- Gateway: http://127.0.0.1:8002/docs
+- Almacen: http://127.0.0.1:8003/docs
+- Auth:    http://127.0.0.1:8004/docs
+
+Importante:
+- Debe estar instalado Python.
+- Deben estar instaladas las librerias del proyecto.
+- Si es una PC nueva, instala dependencias con:
+  pip install fastapi uvicorn sqlalchemy requests python-jose passlib[bcrypt] bcrypt==3.2.2
+
+Para detener el sistema:
+- Cierra las terminales manualmente con CTRL+C, o usa stop.bat.
+
+IMPORTANTE - Cambios recientes:
+- Se eliminaron todas las bases de datos (clientes.db, almacen.db, pedidos.db,
+  auth.db). El sistema arranca limpio: sin clientes, sin productos y sin
+  pedidos registrados.
+- Al iniciar por primera vez, auth-service crea automáticamente el único
+  usuario administrador inicial:
+    Usuario:    Santiago
+    Contraseña: Ss010305+
+    Rol:        administrador
+- Roles del sistema (jerarquía): administrador > gerente > usuario.
+  El rol viaja dentro del token JWT y se valida en cada microservicio.
+  - usuario: solo puede consultar (listar clientes, productos, pedidos, historial).
+  - gerente: además puede crear, editar y cambiar el estado (ACTIVO/INACTIVO).
+  - administrador: además puede eliminar registros y gestionar usuarios/roles
+    desde la página frontend/admin.html (accesible desde "Administración" en
+    el menú lateral, visible solo si el usuario logueado es administrador).
+- Las bases de datos SQLite se migran automáticamente al iniciar cada
+  servicio si ya existieran: se agregan las columnas nuevas (cedula_rif,
+  activo, categoria, rol, grupo_pedido) sin perder datos.
+- Corrección: al procesar una orden (POST /pedidos/orden) o un pedido
+  individual (POST /pedidos), pedidos-service ahora reenvía el token del
+  usuario al consultar el catálogo de almacen-service (antes fallaba con
+  errores de JSON porque esa consulta interna no llevaba el token).

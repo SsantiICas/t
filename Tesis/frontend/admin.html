@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartLogistic Operaciones - Administración</title>
+  <!-- Tailwind CSS vía CDN: mismos criterios que el resto del proyecto (bordes poco
+       redondeados, rounded-md/rounded-sm, para una estética firme). styles.css sigue
+       controlando el diseño base compartido con index.html. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="app" class="app">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-badge small">SL</div>
+      <div>
+        <h2>SmartLogistic</h2>
+        <span>Operaciones</span>
+      </div>
+    </div>
+
+    <nav>
+      <button type="button" class="nav-btn" onclick="window.location.href='index.html'">← Volver al sistema</button>
+      <button type="button" class="nav-btn active">Panel de Administración</button>
+    </nav>
+
+    <button type="button" class="theme-btn" onclick="toggleDarkMode()">Cambiar modo</button>
+    <button type="button" class="logout-btn" onclick="logout()">Cerrar sesión</button>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h1>Panel de Administración</h1>
+        <p>Gestión de usuarios y roles del sistema. Sección exclusiva para el rol administrador.</p>
+      </div>
+      <span class="status-pill">Sistema activo</span>
+    </header>
+
+    <section class="section">
+      <div class="module-header">
+        <div>
+          <h2>Crear usuario</h2>
+          <p>Registra un nuevo usuario del sistema y asígnale un rol.</p>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <input id="admin_username" placeholder="Nombre de usuario">
+        <div>
+          <div class="relative">
+            <input id="admin_password" type="password" placeholder="Contraseña" class="pr-14"
+              oninput="renderChecklistPassword(this.value, 'checklist_admin_password')">
+            <button type="button" onclick="togglePasswordVisibility('admin_password', this)"
+              class="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 hover:text-slate-700 rounded-md px-1.5 py-1">Ver</button>
+          </div>
+          <ul id="checklist_admin_password" class="text-xs mt-1.5 space-y-0.5"></ul>
+        </div>
+        <select id="admin_rol">
+          <option value="usuario">Usuario</option>
+          <option value="gerente">Gerente</option>
+          <option value="administrador">Administrador</option>
+        </select>
+        <button type="button" class="primary-btn" onclick="crearUsuarioAdmin(event)">Crear usuario</button>
+        <button type="button" class="secondary-btn" onclick="togglePanelEdicionUsuario()">Actualizar usuario</button>
+      </div>
+
+      <!-- Panel de edición: se selecciona el usuario y se actualiza mediante el botón "Actualizar". -->
+      <div id="panelEditarUsuario" class="hidden border border-slate-300 rounded-md bg-white p-5 mb-5">
+        <h3 class="font-bold text-[color:var(--blue-dark)] mb-3">Actualizar usuario</h3>
+        <select id="editar_usuario_select" onchange="cargarUsuarioEnPanel()"
+          class="w-full border border-slate-300 rounded-md px-3 py-2.5 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-800/30 focus:border-blue-800">
+          <option value="">Seleccione un usuario para editar</option>
+        </select>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <input id="editar_usuario_username" placeholder="Nombre de usuario"
+            class="w-full border border-slate-300 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/30 focus:border-blue-800">
+          <div>
+            <div class="relative">
+              <input id="editar_usuario_password" type="password" placeholder="Nueva contraseña (opcional)"
+                class="w-full border border-slate-300 rounded-md px-3 py-2.5 pr-14 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/30 focus:border-blue-800"
+                oninput="renderChecklistPassword(this.value, 'checklist_editar_usuario_password')">
+              <button type="button" onclick="togglePasswordVisibility('editar_usuario_password', this)"
+                class="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 hover:text-slate-700 rounded-md px-1.5 py-1">Ver</button>
+            </div>
+            <ul id="checklist_editar_usuario_password" class="text-xs mt-1.5 space-y-0.5"></ul>
+            <p class="text-xs text-slate-400 mt-1">Déjala vacía para no cambiar la contraseña actual.</p>
+          </div>
+          <select id="editar_usuario_rol"
+            class="w-full border border-slate-300 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/30 focus:border-blue-800">
+            <option value="usuario">Usuario</option>
+            <option value="gerente">Gerente</option>
+            <option value="administrador">Administrador</option>
+          </select>
+        </div>
+        <div class="flex gap-2 mt-4">
+          <button type="button" onclick="actualizarUsuarioDesdePanel(event)"
+            class="bg-[color:var(--blue-dark)] text-white font-bold rounded-md px-4 py-2.5 text-sm hover:opacity-90">Actualizar</button>
+          <button type="button" onclick="togglePanelEdicionUsuario()"
+            class="bg-slate-200 text-slate-700 font-bold rounded-md px-4 py-2.5 text-sm hover:bg-slate-300">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h2>Guía de roles y permisos</h2>
+        <ul class="text-sm text-slate-600 space-y-1.5 list-disc list-inside mt-2">
+          <li><b>Usuario:</b> solo consulta clientes, productos, pedidos e historial.</li>
+          <li><b>Gerente:</b> además crea y actualiza clientes/productos, cambia su estado (ACTIVO/INACTIVO) y cambia el estado de los pedidos.</li>
+          <li><b>Administrador:</b> además elimina registros y gestiona usuarios/roles desde este panel.</li>
+        </ul>
+      </div>
+
+      <div class="table-card">
+        <h3>Usuarios del sistema</h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-3 mb-3">
+          <input id="buscador_usuarios" type="text" placeholder="Buscar usuario por nombre..." oninput="filtrarUsuariosAdmin()"
+            class="w-full border border-slate-300 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/30 focus:border-blue-800">
+          <select id="filtro_rol_usuarios" onchange="filtrarUsuariosAdmin()"
+            class="w-full border border-slate-300 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-800/30 focus:border-blue-800">
+            <option value="">Todos los roles</option>
+            <option value="usuario">Usuario</option>
+            <option value="gerente">Gerente</option>
+            <option value="administrador">Administrador</option>
+          </select>
+        </div>
+
+        <div class="list-container">
+          <div class="item-row user-row header-row">
+            <span>Usuario</span>
+            <span>Rol</span>
+            <span>ID</span>
+            <span>Acciones</span>
+          </div>
+          <div id="lista_usuarios_admin" class="grid gap-2"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="alert" class="alert hidden"></div>
+
+<script src="common.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
